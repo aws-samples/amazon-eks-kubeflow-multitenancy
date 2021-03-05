@@ -1,0 +1,5 @@
+urllib3==1.25
+PyYAML==5.3
+rsa==4.5.0
+kubernetes
+eks-token
