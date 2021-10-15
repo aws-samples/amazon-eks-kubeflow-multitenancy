@@ -31,6 +31,7 @@ resource "null_resource" "config_kfctl" {
   provisioner "local-exec" {
     command = <<EOH
 aws eks --region ${var.region} update-kubeconfig --name ${var.eks_name}
+sleep 30
 export AWS_CLUSTER_NAME=${var.eks_name}
 export KF_NAME=${var.eks_name}
 export BASE_DIR=${path.cwd}

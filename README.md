@@ -64,3 +64,20 @@ Change the Parameters in the file terraform.tfvars and run terraform apply
 * lambda_profile_concurrency  =   10
 * tags                        = {}
 * env                         = "<Environment>"  
+
+
+# Instructions
+## Terraform
+* create the an s3 bucket and dynamodb for terraform to store the lock and information about the stack
+* configure the providers to set the bucket
+* create your domain on Route53, need to be public and valid
+* configure terraform.tfvars to add the variables
+* Init the stack
+  * terraform init
+* Run terraform
+  * terraform apply -auto-approve
+* Get the ALB ingress from kubernetes
+  * kubectl get ingress -A
+  * ![Ingres](docs/ingress.png)
+* Create the Route53 entry pointing to this cname
+  * it should be kubeflow.<domain> pointing to the ELB
