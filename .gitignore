@@ -1,0 +1,9 @@
+.terraform
+/kubeflow-ts/*
+kubeflow-ts
+kfctl_aws_rendered.yaml
+kubeconfig_kubeflow-ts
+/venv/
+/binaries/
+.idea/
+.terraform.lock.hcl

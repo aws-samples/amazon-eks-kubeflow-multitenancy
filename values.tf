@@ -5,18 +5,13 @@ variable "region" {
 }
 
 # EKS related
-variable "vpc_id" {}
 variable "eks_name" {}
 variable "iam_role_prefix" {}
 variable "cpu_worker_type" {}
-variable "subnets" {}
-variable "kms_key_arn" {}
 variable "cognito_domain" {}
 variable "auth_base_domain" {}
 variable "route53_domain" {}
 variable "cert_alt_names" {}
-variable "priv_subnets" {}
-variable "pub_subnets" {}
 variable "iam_poliy_prefix" {}
 variable "associate_public_ip_address" {}
 variable "nodegroup_min_size" {}

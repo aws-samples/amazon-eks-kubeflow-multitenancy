@@ -21,7 +21,6 @@ resource "aws_iam_policy" "lambda_kf_manager_policy" {
             "ec2:DeleteNetworkInterface",
             "ec2:DescribeInstances",
             "ec2:AttachNetworkInterface",
-            # "eks:*",
             "iam:PassRole",
             "iam:GetRole",
             "iam:listAttachedRolePolicies",
@@ -108,22 +107,22 @@ resource "aws_lambda_provisioned_concurrency_config" "kf_profile_manager" {
 }
 
 #workaround for the terraform deleting aws-auth
-resource "null_resource" "kubeflow-admin-profile" {
-  triggers = {
-    endpoint = data.aws_eks_cluster.cluster.endpoint
-    ca_crt   = base64decode(data.aws_eks_cluster.cluster.certificate_authority.0.data)
-    token    = data.aws_eks_cluster_auth.cluster.token
-  }
-  provisioner "local-exec" {
-    command = <<EOH
-cat >/tmp/ca.crt <<EOF
-${base64decode(data.aws_eks_cluster.cluster.certificate_authority[0].data)}
-EOF
-kubectl \
---server="${data.aws_eks_cluster.cluster.endpoint}" \
---certificate-authority=/tmp/ca.crt \
---token="${data.aws_eks_cluster_auth.cluster.token}" \
-apply -f ./add-kubeflow-admin.yaml
-EOH
-  }
-}
+#resource "null_resource" "kubeflow-admin-profile" {
+#  triggers = {
+#    endpoint = data.aws_eks_cluster.cluster.endpoint
+#    ca_crt   = base64decode(data.aws_eks_cluster.cluster.certificate_authority.0.data)
+#    token    = data.aws_eks_cluster_auth.cluster.token
+#  }
+#  provisioner "local-exec" {
+#    command = <<EOH
+#cat >/tmp/ca.crt <<EOF
+#${base64decode(data.aws_eks_cluster.cluster.certificate_authority[0].data)}
+#EOF
+#kubectl \
+#--server="${data.aws_eks_cluster.cluster.endpoint}" \
+#--certificate-authority=/tmp/ca.crt \
+#--token="${data.aws_eks_cluster_auth.cluster.token}" \
+#apply -f ./add-kubeflow-admin.yaml
+#EOH
+#  }
+#}

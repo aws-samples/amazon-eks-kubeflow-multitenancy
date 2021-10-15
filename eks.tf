@@ -1,48 +1,65 @@
 # EKS Configuration
-
 data "aws_eks_cluster" "cluster" {
-  name                                  = module.my-cluster.cluster_id
+  name = module.my-cluster.cluster_id
 }
 
 data "aws_eks_cluster_auth" "cluster" {
-  name                                  = module.my-cluster.cluster_id
+  name = module.my-cluster.cluster_id
+}
+
+resource "aws_kms_key" "eks_kms" {
+  description             = "demo_eks_kms_key"
+  deletion_window_in_days = 30
 }
 
 
-#lets fix the tags 
+##lets fix the tags
 resource "aws_ec2_tag" "vpc_tag" {
-  resource_id = var.vpc_id
+  depends_on  = [module.vpc]
+  resource_id = module.vpc.vpc_id
   key         = "kubernetes.io/cluster/${var.eks_name}"
   value       = "shared"
 }
 
-resource "aws_ec2_tag" "Subets_cluster_Tags" {
-  for_each    = toset(var.subnets)
-  resource_id = each.value
+resource "aws_ec2_tag" "Subets_cluster_Tags_priv" {
+  depends_on  = [module.vpc]
+  count       = length(module.vpc.private_subnets)
+  resource_id = module.vpc.private_subnets[count.index]
+  key         = "kubernetes.io/cluster/${var.eks_name}"
+  value       = "shared"
+}
+
+resource "aws_ec2_tag" "Subets_cluster_Tags_pub" {
+  depends_on  = [module.vpc]
+  count       = length(module.vpc.public_subnets)
+  resource_id = module.vpc.public_subnets[count.index]
   key         = "kubernetes.io/cluster/${var.eks_name}"
   value       = "shared"
 }
 
 resource "aws_ec2_tag" "private_subnet_tag" {
-  for_each    = toset(var.priv_subnets)
-  resource_id = each.value
+  depends_on  = [module.vpc]
+  count       = length(module.vpc.private_subnets)
+  resource_id = module.vpc.private_subnets[count.index]
   key         = "kubernetes.io/role/internal-elb"
   value       = "1"
 }
 
 resource "aws_ec2_tag" "public_subnet_tag" {
-  for_each    = toset(var.pub_subnets)
-  resource_id = each.value
+  depends_on  = [module.vpc]
+  count       = length(module.vpc.public_subnets)
+  resource_id = module.vpc.public_subnets[count.index]
   key         = "kubernetes.io/role/elb"
   value       = "1"
 }
 
 module "my-cluster" {
+  depends_on                            = [module.vpc]
   source                                = "terraform-aws-modules/eks/aws"
   cluster_name                          = var.eks_name
-  cluster_version                       = "1.18"
-  subnets                               = var.subnets
-  vpc_id                                = var.vpc_id
+  cluster_version                       = "1.19"
+  subnets                               = concat(module.vpc.public_subnets, module.vpc.private_subnets)
+  vpc_id                                = module.vpc.vpc_id
   manage_aws_auth                       = false
   cluster_create_security_group         = true
   worker_create_security_group          = true
@@ -52,33 +69,35 @@ module "my-cluster" {
   manage_cluster_iam_resources          = true
   cluster_iam_role_name                 = "${var.iam_role_prefix}_kubeflow_Cluster"
   cluster_enabled_log_types             = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
-  cluster_encryption_config = [
+  cluster_encryption_config             = [
     {
-      provider_key_arn = var.kms_key_arn
+      provider_key_arn = aws_kms_key.eks_kms.arn
       resources        = ["secrets"]
     }
   ]
-  workers_group_defaults = {
-  	root_volume_type                    = "gp2"
+  workers_group_defaults                = {
+    root_volume_type = "gp2"
   }
-  tags = var.tags
+  tags                                  = var.tags
 }
 
 #NodeGroup Section
 #IAM ROLE for the nodegroups
 resource "aws_iam_role" "nodegroup" {
-    name = "${var.iam_role_prefix}_kubeflow_Worker"
-  
-    assume_role_policy = jsonencode({
-      Statement = [{
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
+  name = "${var.iam_role_prefix}_kubeflow_Worker"
+
+  assume_role_policy = jsonencode({
+    Statement = [
+      {
+        Action    = "sts:AssumeRole"
+        Effect    = "Allow"
         Principal = {
           Service = "ec2.amazonaws.com"
         }
-      }]
-      Version = "2012-10-17"
-    })
+      }
+    ]
+    Version   = "2012-10-17"
+  })
 }
 
 resource "aws_iam_role_policy_attachment" "nodegroup-AmazonEKSWorkerNodePolicy" {
@@ -104,20 +123,20 @@ resource "aws_iam_policy" "alb_ingress_policy" {
   # Terraform's "jsonencode" function converts a
   # Terraform expression result to valid JSON syntax.
   policy = jsonencode({
-    "Version": "2012-10-17",
-    "Statement": [
+    "Version" : "2012-10-17",
+    "Statement" : [
       {
-        "Effect": "Allow",
-        "Action": [
+        "Effect" : "Allow",
+        "Action" : [
           "acm:DescribeCertificate",
           "acm:ListCertificates",
           "acm:GetCertificate"
         ],
-        "Resource": "*"
+        "Resource" : "*"
       },
       {
-        "Effect": "Allow",
-        "Action": [
+        "Effect" : "Allow",
+        "Action" : [
           "ec2:AuthorizeSecurityGroupIngress",
           "ec2:CreateSecurityGroup",
           "ec2:CreateTags",
@@ -137,11 +156,11 @@ resource "aws_iam_policy" "alb_ingress_policy" {
           "ec2:ModifyNetworkInterfaceAttribute",
           "ec2:RevokeSecurityGroupIngress"
         ],
-        "Resource": "*"
+        "Resource" : "*"
       },
       {
-        "Effect": "Allow",
-        "Action": [
+        "Effect" : "Allow",
+        "Action" : [
           "elasticloadbalancing:AddListenerCertificates",
           "elasticloadbalancing:AddTags",
           "elasticloadbalancing:CreateListener",
@@ -176,57 +195,57 @@ resource "aws_iam_policy" "alb_ingress_policy" {
           "elasticloadbalancing:SetSubnets",
           "elasticloadbalancing:SetWebACL"
         ],
-        "Resource": "*"
+        "Resource" : "*"
       },
       {
-        "Effect": "Allow",
-        "Action": [
+        "Effect" : "Allow",
+        "Action" : [
           "iam:CreateServiceLinkedRole",
           "iam:GetServerCertificate",
           "iam:ListServerCertificates"
         ],
-        "Resource": "*"
+        "Resource" : "*"
       },
       {
-        "Effect": "Allow",
-        "Action": [
+        "Effect" : "Allow",
+        "Action" : [
           "cognito-idp:DescribeUserPoolClient"
         ],
-        "Resource": "*"
+        "Resource" : "*"
       },
       {
-        "Effect": "Allow",
-        "Action": [
+        "Effect" : "Allow",
+        "Action" : [
           "waf-regional:GetWebACLForResource",
           "waf-regional:GetWebACL",
           "waf-regional:AssociateWebACL",
           "waf-regional:DisassociateWebACL"
         ],
-        "Resource": "*"
+        "Resource" : "*"
       },
       {
-        "Effect": "Allow",
-        "Action": [
+        "Effect" : "Allow",
+        "Action" : [
           "tag:GetResources",
           "tag:TagResources"
         ],
-        "Resource": "*"
+        "Resource" : "*"
       },
       {
-        "Effect": "Allow",
-        "Action": [
+        "Effect" : "Allow",
+        "Action" : [
           "waf:GetWebACL"
         ],
-        "Resource": "*"
+        "Resource" : "*"
       }
     ]
   })
 }
 
 resource "aws_iam_role_policy_attachment" "nodegroup-ElasticLoadBalancingFullAccess" {
-  depends_on  = [aws_iam_policy.alb_ingress_policy]
-  policy_arn  = aws_iam_policy.alb_ingress_policy.arn
-  role        = aws_iam_role.nodegroup.name
+  depends_on = [aws_iam_policy.alb_ingress_policy]
+  policy_arn = aws_iam_policy.alb_ingress_policy.arn
+  role       = aws_iam_role.nodegroup.name
 }
 
 #workaround for the terraform deleting aws-auth
@@ -251,7 +270,7 @@ ROLES
         groups:
           - system:masters
   USERS
-}
+  }
 }
 
 data "aws_ami" "eks-worker" {
@@ -273,117 +292,119 @@ USERDATA
 }
 
 resource "aws_launch_template" "launch_template" {
-    depends_on = [
-      aws_iam_role_policy_attachment.nodegroup-AmazonEKSWorkerNodePolicy,
-      aws_iam_role_policy_attachment.nodegroup-AmazonEKS_CNI_Policy,
-      aws_iam_role_policy_attachment.nodegroup-AmazonEC2ContainerRegistryReadOnly,
-      aws_iam_role_policy_attachment.nodegroup-ElasticLoadBalancingFullAccess
-    ]
-    name_prefix                 = "${var.eks_name}-nodegroup-LT"
-    image_id                    = data.aws_ami.eks-worker.id
-    instance_type               = var.cpu_worker_type
-    user_data                   = base64encode(local.main-node-userdata)
-    key_name                    = var.ssh_key_name
-    
-    network_interfaces {
-      associate_public_ip_address = var.associate_public_ip_address
-      security_groups             = [module.my-cluster.worker_security_group_id]
+  depends_on    = [
+    aws_iam_role_policy_attachment.nodegroup-AmazonEKSWorkerNodePolicy,
+    aws_iam_role_policy_attachment.nodegroup-AmazonEKS_CNI_Policy,
+    aws_iam_role_policy_attachment.nodegroup-AmazonEC2ContainerRegistryReadOnly,
+    aws_iam_role_policy_attachment.nodegroup-ElasticLoadBalancingFullAccess
+  ]
+  name_prefix   = "${var.eks_name}-nodegroup-LT"
+  image_id      = data.aws_ami.eks-worker.id
+  instance_type = var.cpu_worker_type
+  user_data     = base64encode(local.main-node-userdata)
+  key_name      = var.ssh_key_name
+
+  network_interfaces {
+    associate_public_ip_address = var.associate_public_ip_address
+    security_groups             = [module.my-cluster.worker_security_group_id]
+  }
+
+  tag_specifications {
+    resource_type = "instance"
+    tags          = merge(var.tags,
+    {
+      Name                                    = "${var.eks_name}-nodegroup-LT"
+      "kubernetes.io/cluster/${var.eks_name}" = "owned"
     }
-  
-    tag_specifications {
-      resource_type = "instance"
-      tags =  merge(var.tags,
-        {
-            Name                                    = "${var.eks_name}-nodegroup-LT"
-            "kubernetes.io/cluster/${var.eks_name}" = "owned"
-        }
-      )
-    }
-    lifecycle {
-      create_before_destroy = true
-    }
+    )
+  }
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 
 resource "aws_eks_node_group" "example" {
-  cluster_name      = var.eks_name
-    node_group_name = "${var.eks_name}-nodegroup"
-    node_role_arn   = aws_iam_role.nodegroup.arn
-    subnet_ids      = var.pub_subnets[*]
-  
-    scaling_config {
-      desired_size = var.nodegroup_desired_size
-      max_size     = var.nodegroup_max_size
-      min_size     = var.nodegroup_min_size
-    }
-    # Ensure that IAM Role permissions are created before and deleted after EKS Node Group handling.
-    # Otherwise, EKS will not be able to properly delete EC2 Instances and Elastic Network Interfaces.
-    depends_on = [
-      module.my-cluster,
-      aws_launch_template.launch_template
-    ]
-    launch_template {
-      name                                    = aws_launch_template.launch_template.name
-      version                                 = aws_launch_template.launch_template.latest_version
-    }
-   tags =  merge(var.tags,
-    {
-        "kubernetes.io/cluster/${var.eks_name}" = "owned"
-    }
+  cluster_name    = var.eks_name
+  node_group_name = "${var.eks_name}-nodegroup"
+  node_role_arn   = aws_iam_role.nodegroup.arn
+  subnet_ids      = module.vpc.private_subnets
+
+  scaling_config {
+    desired_size = var.nodegroup_desired_size
+    max_size     = var.nodegroup_max_size
+    min_size     = var.nodegroup_min_size
+  }
+  # Ensure that IAM Role permissions are created before and deleted after EKS Node Group handling.
+  # Otherwise, EKS will not be able to properly delete EC2 Instances and Elastic Network Interfaces.
+  depends_on = [
+    module.my-cluster,
+    aws_launch_template.launch_template
+  ]
+  launch_template {
+    name    = aws_launch_template.launch_template.name
+    version = aws_launch_template.launch_template.latest_version
+  }
+  tags       = merge(var.tags,
+  {
+    "kubernetes.io/cluster/${var.eks_name}" = "owned"
+  }
   )
 
 }
 
-resource "kubectl_manifest" "proxy" {
-  yaml_body = file("${path.module}/proxy-env-vars-config.yaml")
-}
-
-resource "null_resource" "k8s_patcher_kube-proxy" {
-  depends_on = [ kubectl_manifest.proxy ]
-  triggers = {
-    endpoint = data.aws_eks_cluster.cluster.endpoint
-    ca_crt   = base64decode(data.aws_eks_cluster.cluster.certificate_authority.0.data)
-    token    = data.aws_eks_cluster_auth.cluster.token
-  }
-  provisioner "local-exec" {
-    command = <<EOH
-cat >/tmp/ca.crt <<EOF
-${base64decode(data.aws_eks_cluster.cluster.certificate_authority[0].data)}
-EOF
-kubectl \
---server="${data.aws_eks_cluster.cluster.endpoint}" \
---certificate-authority=/tmp/ca.crt \
---token="${data.aws_eks_cluster_auth.cluster.token}" \
-patch -n kube-system \
--p '{ "spec": {"template": { "spec": { "containers": [ { "name": "kube-proxy", "envFrom": [ { "configMapRef": {"name": "proxy-environment-variables"} } ] } ] } } } }' \
-daemonset kube-proxy
-EOH
-  }
-}
-
-resource "null_resource" "k8s_set_kube-proxy" {
-  depends_on = [ null_resource.k8s_patcher_kube-proxy ]
-  triggers = {
-    endpoint = data.aws_eks_cluster.cluster.endpoint
-    ca_crt   = base64decode(data.aws_eks_cluster.cluster.certificate_authority.0.data)
-    token    = data.aws_eks_cluster_auth.cluster.token
-  }
-  provisioner "local-exec" {
-    command = <<EOH
-cat >/tmp/ca.crt <<EOF
-${base64decode(data.aws_eks_cluster.cluster.certificate_authority[0].data)}
-EOF
-kubectl \
---server="${data.aws_eks_cluster.cluster.endpoint}" \
---certificate-authority=/tmp/ca.crt \
---token="${data.aws_eks_cluster_auth.cluster.token}" \
-set env daemonset/kube-proxy \
---namespace=kube-system \
---from=configmap/proxy-environment-variables \
---containers='*'
-EOH
-  }
-}
+#only needed if you need proxy
+#
+#resource "kubectl_manifest" "proxy" {
+#  yaml_body = file("${path.module}/proxy-env-vars-config.yaml")
+#}
+#
+#resource "null_resource" "k8s_patcher_kube-proxy" {
+#  depends_on = [kubectl_manifest.proxy]
+#  triggers   = {
+#    endpoint = data.aws_eks_cluster.cluster.endpoint
+#    ca_crt   = base64decode(data.aws_eks_cluster.cluster.certificate_authority.0.data)
+#    token    = data.aws_eks_cluster_auth.cluster.token
+#  }
+#  provisioner "local-exec" {
+#    command = <<EOH
+#cat >/tmp/ca.crt <<EOF
+#${base64decode(data.aws_eks_cluster.cluster.certificate_authority[0].data)}
+#EOF
+#kubectl \
+#--server="${data.aws_eks_cluster.cluster.endpoint}" \
+#--certificate-authority=/tmp/ca.crt \
+#--token="${data.aws_eks_cluster_auth.cluster.token}" \
+#patch -n kube-system \
+#-p '{ "spec": {"template": { "spec": { "containers": [ { "name": "kube-proxy", "envFrom": [ { "configMapRef": {"name": "proxy-environment-variables"} } ] } ] } } } }' \
+#daemonset kube-proxy
+#EOH
+#  }
+#}
+#
+#resource "null_resource" "k8s_set_kube-proxy" {
+#  depends_on = [null_resource.k8s_patcher_kube-proxy]
+#  triggers   = {
+#    endpoint = data.aws_eks_cluster.cluster.endpoint
+#    ca_crt   = base64decode(data.aws_eks_cluster.cluster.certificate_authority.0.data)
+#    token    = data.aws_eks_cluster_auth.cluster.token
+#  }
+#  provisioner "local-exec" {
+#    command = <<EOH
+#cat >/tmp/ca.crt <<EOF
+#${base64decode(data.aws_eks_cluster.cluster.certificate_authority[0].data)}
+#EOF
+#kubectl \
+#--server="${data.aws_eks_cluster.cluster.endpoint}" \
+#--certificate-authority=/tmp/ca.crt \
+#--token="${data.aws_eks_cluster_auth.cluster.token}" \
+#set env daemonset/kube-proxy \
+#--namespace=kube-system \
+#--from=configmap/proxy-environment-variables \
+#--containers='*'
+#EOH
+#  }
+#}
 
 #outputs
 output "cluster_id" {
@@ -425,7 +446,7 @@ output "worker_iam_role_arn" {
 }
 output "base64data" {
   value = data.aws_eks_cluster.cluster.certificate_authority.0.data
-  }
+}
 output "IAM_Policy_ALB" {
   value = aws_iam_policy.alb_ingress_policy.arn
 }

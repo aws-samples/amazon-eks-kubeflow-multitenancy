@@ -6,24 +6,27 @@ terraform {
       source  = "gavinbunney/kubectl"
       version = ">= 1.7.0"
     }
-   
+    aws     = {
+      version = ">=1.22.0"
+    }
   }
 
   backend "s3" {
-    bucket         = "terraform-state-bucket-us-east-1"
+    bucket         = "terraform-kubeflow-state-us-east-1"
     key            = "dev/terraform.tfstate"
-    dynamodb_table = "kubeflow-env-state-terraform"
+    dynamodb_table = "terraformkubeflow"
     encrypt        = true
     external_id    = "12345"
   }
 }
 
 provider "aws" {
-    region                   = var.region
-    ignore_tags {
-      key_prefixes = ["kubernetes.io/"]
-    }
- }
+  allowed_account_ids = [627906291938]
+  region      = var.region
+  ignore_tags {
+    key_prefixes = ["kubernetes.io/"]
+  }
+}
 
 provider "kubernetes" {
   host                   = data.aws_eks_cluster.cluster.endpoint

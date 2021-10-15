@@ -30,17 +30,16 @@ resource "null_resource" "config_kfctl" {
   }
   provisioner "local-exec" {
     command = <<EOH
-export AWS_CLUSTER_NAME=${module.my-cluster.cluster_arn}
+aws eks --region ${var.region} update-kubeconfig --name ${var.eks_name}
+export AWS_CLUSTER_NAME=${var.eks_name}
 export KF_NAME=${var.eks_name}
 export BASE_DIR=${path.cwd}
-export CONFIG_FILE=${path.cwd}/kfctl_aws_rendered.yaml
-export CONFIG_URI=${path.cwd}
-
-aws eks --region ${var.region} update-kubeconfig --name ${var.eks_name}
-kfctl build -f "${path.cwd}/kfctl_aws_rendered.yaml"
-/usr/bin/sed -i 's/registration-flow=true/registration-flow=false/g' ./.cache/manifests/manifests-1.2.0/common/centraldashboard/base/params.env
-sleep 10
-kfctl apply -f "${path.cwd}/kfctl_aws_rendered.yaml"
+export KF_DIR=${path.cwd}/${var.eks_name}
+export CONFIG_FILE=${path.cwd}/${var.eks_name}/kfctl_aws_rendered.yaml
+cp ${path.cwd}/kfctl_aws_rendered.yaml ${path.cwd}/${var.eks_name}/
+mkdir -p ${path.cwd}/${var.eks_name}
+cd ${path.cwd}/${var.eks_name}
+kfctl apply -V -f ${path.cwd}/${var.eks_name}/kfctl_aws_rendered.yaml
 EOH
   }
 }
