@@ -36,8 +36,8 @@ Change the Parameters in the file terraform.tfvars and run terraform apply
 * VPC with 2 private subnets
 * ADFS
   * saml-metadata.xml.tpl needs to be replaced with your ADFS metadata xml file 
-* Route53 Custom Domain
-* Existing CMK KMS (not mandatory)
+* Route53 Custom Domain (Mandatory, self-signed certificate will not work)
+* Kfctl and aws-iam-authenticator in the PATH(this is used by terraform to install kubeflow)
 
 
 #### Required parameters
