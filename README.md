@@ -35,18 +35,16 @@ Change the Parameters in the file terraform.tfvars and run terraform apply
 #### Requirements
 * VPC with 2 private subnets
 * ADFS
+  * saml-metadata.xml.tpl needs to be replaced with your ADFS metadata xml file 
 * Route53 Custom Domain
 * Existing CMK KMS (not mandatory)
 
 
 #### Required parameters
-* region                      =   <region>
-* account_id                  =   <account_id>
+* region                      = us-east-1
+* account_id                  = <account_id>
 * vpc_id                      =   <vpc_id>
 * kms_key_arn                 =   <kms_ley>
-* subnets                     =   [<subnets>]
-* priv_subnets                =   [<priv_subnets>]
-* pub_subnets                 =   [<pub_subnets>]
 * eks_name                    =   "kubeflow-DEMO"
 * iam_role_prefix             =   "kubeflow"
 * iam_poliy_prefix            =   "kubeflow"
