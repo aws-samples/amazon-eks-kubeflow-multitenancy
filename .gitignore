@@ -1,4 +1,5 @@
 .terraform
+.lambdas
 /kubeflow-ts/*
 kubeflow-ts
 kfctl_aws_rendered.yaml

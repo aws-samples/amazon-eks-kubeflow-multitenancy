@@ -1,7 +1,12 @@
+resource "null_resource" "config_folders" {
+  provisioner "local-exec" {
+    command = <<EOH
+mkdir -p ${path.cwd}/${var.eks_name}
+EOH
+  }
+}
 data "template_file" "kubeflow" {
   template = file("./kfctl_aws_cognito.v1.2.0.yaml")
-  #template = file("./kfctl_aws.v1.2.0.yaml")
-  #template = file("${path.module}/../my-configmap.yaml")
 
   vars = {
     certArn                 = aws_acm_certificate.cert.arn
@@ -18,7 +23,7 @@ data "template_file" "kubeflow" {
 
 resource "local_file" "kfctl_yaml" {
     content     = data.template_file.kubeflow.rendered
-    filename = "${path.cwd}/kfctl_aws_rendered.yaml"
+    filename = "${path.cwd}/${var.eks_name}/kfctl_aws_rendered.yaml"
 }
 
 resource "null_resource" "config_kfctl" {
@@ -37,8 +42,6 @@ export KF_NAME=${var.eks_name}
 export BASE_DIR=${path.cwd}
 export KF_DIR=${path.cwd}/${var.eks_name}
 export CONFIG_FILE=${path.cwd}/${var.eks_name}/kfctl_aws_rendered.yaml
-cp ${path.cwd}/kfctl_aws_rendered.yaml ${path.cwd}/${var.eks_name}/
-mkdir -p ${path.cwd}/${var.eks_name}
 cd ${path.cwd}/${var.eks_name}
 kfctl apply -V -f ${path.cwd}/${var.eks_name}/kfctl_aws_rendered.yaml
 EOH

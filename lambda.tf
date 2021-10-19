@@ -67,14 +67,35 @@ resource "aws_iam_role_policy_attachment" "aws_xray_write_only_access" {
   policy_arn  = "${data.aws_iam_policy.aws_xray_write_only_access.arn}"
 }
 
+resource "null_resource" "my_lambda_buildstep" {
+  triggers = {
+    handler      = "${base64sha256(file("lambdas/kf_profile_manager/index.py"))}"
+    requirements = "${base64sha256(file("lambdas/kf_profile_manager/requirements.txt"))}"
+    build        = "${base64sha256(file("lambdas/kf_profile_manager/build.sh"))}"
+  }
+
+  provisioner "local-exec" {
+    command = "${path.module}/lambdas/kf_profile_manager/build.sh"
+  }
+}
+
+data "archive_file" "my_lambda_function_with_dependencies" {
+  source_dir  = "${path.module}/lambdas/kf_profile_manager/"
+  output_path = "${path.module}lambdas/kf_profile_manager.zip"
+  type        = "zip"
+
+  depends_on = [null_resource.my_lambda_buildstep]
+}
 
 resource "aws_lambda_function" "kf_profile_manager" {
-  depends_on        = [aws_iam_role.lambda_kf_manager_role]
-  filename          = "./lambdas/kf_profile_manager.zip"
+  depends_on        = [aws_iam_role.lambda_kf_manager_role, data.archive_file.my_lambda_function_with_dependencies ]
+  #filename          = "./lambdas/kf_profile_manager.zip"
   function_name     = "${var.eks_name}_lambda_kf_profile"
   role              = aws_iam_role.lambda_kf_manager_role.arn
   handler           = "index.lambda_handler"
-  source_code_hash  = filebase64sha256("./lambdas/kf_profile_manager.zip")
+  #source_code_hash  = filebase64sha256("./lambdas/kf_profile_manager.zip")
+  filename         = "${data.archive_file.my_lambda_function_with_dependencies.output_path}"
+  source_code_hash = "${data.archive_file.my_lambda_function_with_dependencies.output_base64sha256}"
   runtime           = "python3.8"
   memory_size       = 512
   timeout           = 60
@@ -105,24 +126,3 @@ resource "aws_lambda_provisioned_concurrency_config" "kf_profile_manager" {
   provisioned_concurrent_executions = var.lambda_profile_concurrency
   qualifier                         = aws_lambda_function.kf_profile_manager.version
 }
-
-#workaround for the terraform deleting aws-auth
-#resource "null_resource" "kubeflow-admin-profile" {
-#  triggers = {
-#    endpoint = data.aws_eks_cluster.cluster.endpoint
-#    ca_crt   = base64decode(data.aws_eks_cluster.cluster.certificate_authority.0.data)
-#    token    = data.aws_eks_cluster_auth.cluster.token
-#  }
-#  provisioner "local-exec" {
-#    command = <<EOH
-#cat >/tmp/ca.crt <<EOF
-#${base64decode(data.aws_eks_cluster.cluster.certificate_authority[0].data)}
-#EOF
-#kubectl \
-#--server="${data.aws_eks_cluster.cluster.endpoint}" \
-#--certificate-authority=/tmp/ca.crt \
-#--token="${data.aws_eks_cluster_auth.cluster.token}" \
-#apply -f ./add-kubeflow-admin.yaml
-#EOH
-#  }
-#}
