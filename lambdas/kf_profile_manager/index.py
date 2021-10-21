@@ -26,10 +26,10 @@ def is_port_open(host, port):
 #generic variables
 
 # connectivity: get the api_client
-cluster_name = os.environ['clusterName']
-cognito_group_field = os.environ['cognitoGroupField']
-# cluster_name = "kubeflow-ts"
-# cognito_group_field = "custom:groups"
+#cluster_name = os.environ['clusterName']
+#cognito_group_field = os.environ['cognitoGroupField']
+cluster_name = "kubeflow-ts"
+cognito_group_field = "custom:groups"
 cluster_info = boto3.client('eks').describe_cluster(name=cluster_name)['cluster']
 ekstoken = eks_token.get_token(cluster_name=cluster_name)['status']['token']
 cluster_host = cluster_info['endpoint'][8:]
@@ -315,7 +315,11 @@ def lambda_handler(event, context):
     groups = data_groups.replace("[","").replace("]","").split(", ")
     groups = [element.lower() for element in groups] ; 
     print("groups = " + json.dumps(groups))
-    user_name = event['userName'].replace("adfs_ad\\","")
+    name = event['userName'].split("\\")
+    if len(name) == 1:
+        user_name = name[0]
+    else:
+        user_name = name[1]
     user_email = event['request']['userAttributes']['email']
     
     namespaces = get_ns()
@@ -358,39 +362,3 @@ def lambda_handler(event, context):
             # print(inspect.getframeinfo(inspect.currentframe()).lineno)
     
     return event
-
-# myevent = {
-#     "version": "1",
-#     "triggerSource": "TokenGeneration_HostedAuth",
-#     "region": "us-east-1",
-#     "userPoolId": "us-east-1_mg7wscVHr",
-#     "userName": "adfs_ad\\rumesh",
-#     "callerContext": {
-#         "awsSdkVersion": "aws-sdk-unknown-unknown",
-#         "clientId": "1qlg2f7sagm6ob7s5985rm1qk8"
-#     },
-#     "request": {
-#         "userAttributes": {
-#             "sub": "12ec26be-e8d1-482b-9602-e402c7896cb3",
-#             "email_verified": "true",
-#             "cognito:user_status": "EXTERNAL_PROVIDER",
-#             "cognito:email_alias": "rumeshkm@amazon.com",
-#             "identities": "[{\"userId\":\"AD\\\\rumesh\",\"providerName\":\"ADFS\",\"providerType\":\"SAML\",\"issuer\":\"http://EC2AMAZ-KGA80V1.ad.kubeflow-ts.theawsninja.com/adfs/services/trust\",\"primary\":true,\"dateCreated\":1614866385549}]",
-#             "custom:groups": "[RIDY-RUMESH, RIDY-JOSE, RUMESH]",
-#             "email": "rumeshkm@amazon.com"
-#         },
-#         "groupConfiguration": {
-#             "groupsToOverride": [
-#                 "us-east-1_mg7wscVHr_ADFS"
-#             ],
-#             "iamRolesToOverride": [],
-#             "preferredRole": ""
-#         }
-#     },
-#     "response": {
-#         "claimsOverrideDetails": ""
-#     }
-# }
-
-
-# lambda_handler(myevent,"")

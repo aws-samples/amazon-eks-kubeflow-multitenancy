@@ -69,7 +69,6 @@ resource "aws_cognito_user_pool" "pool" {
       max_length = 2048
     }
   }
-
   schema {
     name                     = "name"
     attribute_data_type      = "String"
@@ -81,7 +80,6 @@ resource "aws_cognito_user_pool" "pool" {
       max_length = 2048
     }
   }
-
   schema {
     name                     = "given_name"
     attribute_data_type      = "String"
@@ -93,7 +91,6 @@ resource "aws_cognito_user_pool" "pool" {
       max_length = 2048
     }
   }
-
   schema {
     name                     = "family_name"
     attribute_data_type      = "String"
@@ -105,7 +102,6 @@ resource "aws_cognito_user_pool" "pool" {
       max_length = 2048
     }
   }
-
   schema {
     name                     = "middle_name"
     attribute_data_type      = "String"
@@ -117,7 +113,6 @@ resource "aws_cognito_user_pool" "pool" {
       max_length = 2048
     }
   }
-
   schema {
     name                     = "nickname"
     attribute_data_type      = "String"
@@ -129,7 +124,6 @@ resource "aws_cognito_user_pool" "pool" {
       max_length = 2048
     }
   }
-
   schema {
     name                     = "preferred_username"
     attribute_data_type      = "String"
@@ -141,7 +135,6 @@ resource "aws_cognito_user_pool" "pool" {
       max_length = 2048
     }
   }
-
   schema {
     name                     = "profile"
     attribute_data_type      = "String"
@@ -153,7 +146,6 @@ resource "aws_cognito_user_pool" "pool" {
       max_length = 2048
     }
   }
-
   schema {
     name                     = "picture"
     attribute_data_type      = "String"
@@ -165,7 +157,6 @@ resource "aws_cognito_user_pool" "pool" {
       max_length = 2048
     }
   }
-
   schema {
     name                     = "website"
     attribute_data_type      = "String"
@@ -177,7 +168,6 @@ resource "aws_cognito_user_pool" "pool" {
       max_length = 2048
     }
   }
-
   schema {
     name                     = "email"
     attribute_data_type      = "String"
@@ -189,7 +179,6 @@ resource "aws_cognito_user_pool" "pool" {
       max_length = 2048
     }
   }
-
   schema {
     name                     = "email_verified"
     attribute_data_type      = "Boolean"
@@ -197,7 +186,6 @@ resource "aws_cognito_user_pool" "pool" {
     mutable                  = "true"
     required                 = "false"
   }
-
   schema {
     name                     = "gender"
     attribute_data_type      = "String"
@@ -209,7 +197,6 @@ resource "aws_cognito_user_pool" "pool" {
       max_length = 2048
     }
   }
-
   schema {
     name                     = "birthdate"
     attribute_data_type      = "String"
@@ -221,7 +208,6 @@ resource "aws_cognito_user_pool" "pool" {
       max_length = 10
     }
   }
-
   schema {
     name                     = "zoneinfo"
     attribute_data_type      = "String"
@@ -233,7 +219,6 @@ resource "aws_cognito_user_pool" "pool" {
       max_length = 2048
     }
   }
-
   schema {
     name                     = "locale"
     attribute_data_type      = "String"
@@ -245,7 +230,6 @@ resource "aws_cognito_user_pool" "pool" {
       max_length = 2048
     }
   }
-
   schema {
     name                     = "address"
     attribute_data_type      = "String"
@@ -257,7 +241,6 @@ resource "aws_cognito_user_pool" "pool" {
       max_length = 2048
     }
   }
-
   schema {
     name                     = "updated_at"
     attribute_data_type      = "Number"
@@ -280,6 +263,15 @@ resource "aws_cognito_user_pool" "pool" {
     }
   }
 }
+
+resource "aws_lambda_permission" "allow_cloudwatch" {
+  statement_id  = "AllowExecutionFromCloudWatch"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.kf_profile_manager.arn
+  principal     = "cognito-idp.amazonaws.com"
+  source_arn    = "arn:aws:cognito-idp:${var.region}:${var.account_id}:userpool/${var.region}_${aws_cognito_user_pool.pool.id}"
+}
+
 
 resource "aws_route53_record" "auth-cognito-A" {
   name    = var.auth_base_domain

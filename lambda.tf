@@ -8,31 +8,66 @@ resource "aws_iam_policy" "lambda_kf_manager_policy" {
   policy = jsonencode({
     "Version": "2012-10-17",
     "Statement": [
-      {
-        "Effect": "Allow",
-        "Action": [
-            "logs:CreateLogGroup",
-            "logs:CreateLogStream",
-            "logs:PutLogEvents",
-            "sts:GetCallerIdentity",
-            "eks:DescribeCluster",
-            "ec2:DescribeNetworkInterfaces",
-            "ec2:CreateNetworkInterface",
-            "ec2:DeleteNetworkInterface",
-            "ec2:DescribeInstances",
-            "ec2:AttachNetworkInterface",
-            "iam:PassRole",
-            "iam:GetRole",
-            "iam:listAttachedRolePolicies",
-            "iam:CreateServiceLinkedRole",
-            "sts:AssumeRole",
-            "ssm:GetParameter",
-            "cloudwatch:PutMetricData"
-        ],
-        "Resource": "*"
-      }
-     ]
-  })
+        {
+            "Sid": "VisualEditor0",
+            "Effect": "Allow",
+            "Action": [
+                "ec2:CreateNetworkInterface",
+                "ec2:DeleteNetworkInterface",
+                "ec2:AttachNetworkInterface"
+            ],
+            "Resource": [
+                "arn:aws:ec2:us-east-1:627906291938:network-interface/*",
+                "arn:aws:ec2:us-east-1:627906291938:subnet/*",
+                "arn:aws:ec2:us-east-1:627906291938:security-group/*",
+                "arn:aws:ec2:us-east-1:627906291938:instance/*"
+            ]
+        },
+        {
+            "Sid": "VisualEditor1",
+            "Effect": "Allow",
+            "Action": [
+                "iam:GetRole",
+                "iam:PassRole",
+                "iam:CreateServiceLinkedRole",
+                "iam:ListAttachedRolePolicies",
+                "logs:PutLogEvents"
+            ],
+            "Resource": [
+                "arn:aws:logs:us-east-1:627906291938:log-group:*:log-stream:*",
+                "arn:aws:iam::627906291938:role/*"
+            ]
+        },
+        {
+            "Sid": "VisualEditor2",
+            "Effect": "Allow",
+            "Action": [
+                "logs:CreateLogStream",
+                "sts:AssumeRole",
+                "eks:DescribeCluster",
+                "logs:CreateLogGroup",
+                "ssm:GetParameter"
+            ],
+            "Resource": [
+                "arn:aws:logs:us-east-1:627906291938:log-group:*",
+                "arn:aws:iam::627906291938:role/*",
+                "arn:aws:ssm:us-east-1:627906291938:parameter/*",
+                "arn:aws:eks:us-east-1:627906291938:cluster/*"
+            ]
+        },
+        {
+            "Sid": "VisualEditor3",
+            "Effect": "Allow",
+            "Action": [
+                "ec2:DescribeInstances",
+                "cloudwatch:PutMetricData",
+                "ec2:DescribeNetworkInterfaces",
+                "sts:GetCallerIdentity"
+            ],
+            "Resource": "*"
+        }
+    ]
+})
 }
 
 resource "aws_iam_role" "lambda_kf_manager_role" {
@@ -126,3 +161,4 @@ resource "aws_lambda_provisioned_concurrency_config" "kf_profile_manager" {
   provisioned_concurrent_executions = var.lambda_profile_concurrency
   qualifier                         = aws_lambda_function.kf_profile_manager.version
 }
+

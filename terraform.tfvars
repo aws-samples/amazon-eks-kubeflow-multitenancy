@@ -1,5 +1,5 @@
 region                      =   "us-east-1"
-account_id                  =   "xxxxxxxxxxxx"
+account_id                  =   "xxxxxxx"
 eks_name                    =   "kubeflow-ts"
 iam_role_prefix             =   "kubeflow"
 iam_poliy_prefix            =   "kubeflow"
@@ -13,7 +13,7 @@ associate_public_ip_address =   true
 nodegroup_min_size          =   1
 nodegroup_max_size          =   6
 nodegroup_desired_size      =   6
-ssh_key_name                =   "mykey"
+ssh_key_name                =   "xxxxx"
 adfs_url                    =   "adfs.demo.realaws.com"
 lambda_concurreny_enabled   =   false
 lambda_profile_concurrency  =   10
