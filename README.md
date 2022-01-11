@@ -32,6 +32,21 @@ This Terraform module assumes some resources already exist and it has parameters
 
 Change the Parameters in the file terraform.tfvars and run terraform apply
 
+#### Prerequisites
+
+In order to build this solution, you will need access to the following.
+
+* AWS account
+* Amazon Certificate Manager (ACM) certificate and a valid domain 
+* Knowledge about Amazon Cognito, Identity providers and Federation and Kubernetes/Amazon EKS
+* eksctl
+* Minimal knowledge in other AWS services like Route53, and AWS Lambda
+* Kubeflow basic administration knowledge. 
+* ADFS Claims configured to support the Amazon Cognito Configuration 
+* ADFS environment:
+  * To configure Microsoft Active Directory with Federation services, please follow [this](https://aws.amazon.com/blogs/security/enabling-federation-to-aws-using-windows-active-directory-adfs-and-saml-2-0/) guide.  
+
+
 #### Requirements
 * VPC with 2 private subnets
 * ADFS
