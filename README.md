@@ -96,3 +96,6 @@ In order to build this solution, you will need access to the following.
   * ![Ingres](docs/ingress.png)
 * Create the Route53 entry pointing to this cname
   * it should be kubeflow.<domain> pointing to the ELB
+ 
+ ## Disclaimer
+ This code only works with Kubeflow 1.2 currently, it will be updated as soon as support for Amazon Cognito for 1.3 is available.
