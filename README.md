@@ -99,3 +99,48 @@ In order to build this solution, you will need access to the following.
  
  ## Disclaimer
  This code only works with Kubeflow 1.2 currently, it will be updated as soon as support for Amazon Cognito for 1.3 is available.
+
+
+# Additional Resources
+
+## ADFS Configuration
+
+To configure Microsoft Active Directory with Federation services, please follow this blog (https://aws.amazon.com/blogs/security/enabling-federation-to-aws-using-windows-active-directory-adfs-and-saml-2-0/).
+
+We need to configure/ensure that some claims are present in the Microsoft ADFS server.
+ Please follow the steps bellow to validate that all the configuration is in place.
+
+* The following claims are necessary for cognito to work properly
+    * Email
+    * Type: Send Ldap attributes as claim
+    * Name: Email
+    * Ldap Attribute: E-Mail-Addresses
+    * Outgoing Claim: E-Mail-Address
+    * ![img1](docs/adfs_image_1.png)
+* Name ID
+    * Type: Transform an Incoming claim
+    * Name: Name ID
+    * Incoming Claim type: Name
+    * Outgoing Claim type: Name ID
+    * Outgoing Name Id format: Persistent Identifier
+    * ![img2](docs/adfs_image_2.png)
+    * Validate Email
+        * Type: Send Claims Using a Custom Rule
+        * Name: validate_email
+      > => issue(Type = "https://aws.amazon.com/SAML/Attributes/validation", Value = "true");
+
+* Get AD Groups
+    * Type: Send Claims Using a Custom Rule
+    * Name: Get AD Groups
+    > c:[Type == "http://schemas.microsoft.com/ws/2008/06/identity/claims/windowsaccountname", Issuer == "AD AUTHORITY"]
+ => add(store = "Active Directory", types = ("http://temp/variable"), query = ";tokenGroups;{0}", param = c.Value);
+    * ![img3](docs/adfs_image_3.png)
+* groups
+    * Type: Send Claims Using a Custom Rule
+    * Name: groups
+  > c:[Type == "http://temp/variable", Value =~ "(?i)^AWS-"]
+ => issue(Type = "https://aws.amazon.com/SAML/Attributes/Role", Value = RegExReplace(c.Value, "AWS-", ""));
+    * ![img4](docs/adfs_image_4.png)
+
+
+
