@@ -1,4 +1,4 @@
-urllib3==1.25
+urllib3==1.26.18
 PyYAML==5.3
 rsa==4.5.0
 kubernetes
